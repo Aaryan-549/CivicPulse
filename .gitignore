@@ -1,0 +1,7 @@
+# Claude Code configuration
+.claude/
+
+# Misc
+nul
+node_modules/
+.env

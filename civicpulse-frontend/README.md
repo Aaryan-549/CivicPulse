@@ -1,0 +1,1 @@
+This repository contains only the frontend of the project, built using React, TailwindCSS, and Leaflet maps.

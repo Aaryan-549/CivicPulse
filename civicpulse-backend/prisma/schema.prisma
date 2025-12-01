@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  name         String
+  email        String      @unique
+  phone        String      @unique
+  passwordHash String      @map("password_hash")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  complaints   Complaint[]
+
+  @@map("users")
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+model Worker {
+  id             String      @id @default(uuid())
+  name           String
+  email          String      @unique
+  phone          String      @unique
+  status         String      @default("Active")
+  assignedCount  Int         @default(0) @map("assigned_count")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  complaints     Complaint[]
+
+  @@map("workers")
+}
+
+model Complaint {
+  id                String          @id @default(uuid())
+  type              String
+  category          String
+  subcategory       String
+  description       String
+  address           String
+  latitude          Float
+  longitude         Float
+  status            String          @default("Pending")
+  plateNumber       String?         @map("plate_number")
+  confidenceScore   Float?          @map("confidence_score")
+  validationStatus  String          @default("Pending") @map("validation_status")
+  userId            String          @map("user_id")
+  workerId          String?         @map("worker_id")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  resolvedAt        DateTime?       @map("resolved_at")
+  user              User            @relation(fields: [userId], references: [id])
+  worker            Worker?         @relation(fields: [workerId], references: [id])
+  media             Media[]
+  statusHistory     StatusHistory[]
+
+  @@map("complaints")
+}
+
+model Media {
+  id          String    @id @default(uuid())
+  complaintId String    @map("complaint_id")
+  url         String
+  publicId    String    @map("public_id")
+  type        String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@map("media")
+}
+
+model StatusHistory {
+  id          String    @id @default(uuid())
+  complaintId String    @map("complaint_id")
+  oldStatus   String    @map("old_status")
+  newStatus   String    @map("new_status")
+  changedBy   String    @map("changed_by")
+  timestamp   DateTime  @default(now())
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@map("status_history")
+}
