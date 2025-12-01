@@ -14,16 +14,13 @@ export const createCivicComplaint = async (req, res, next) => {
 
     if (req.file) {
       try {
-        const uploadResult = await uploadImage(req.file.buffer, 'civic-complaints');
-        imageUrl = uploadResult.secure_url;
-        imagePublicId = uploadResult.public_id;
-
-        const validation = await validateImage(req.file.buffer);
-        if (!validation.valid) {
-          console.log('Image validation failed, skipping image upload');
-        }
+        // Upload to Cloudinary
+        const result = await uploadImage(req.file.buffer, 'civic-complaints');
+        imageUrl = result.secure_url;
+        imagePublicId = result.public_id;
+        console.log('✓ Image uploaded to Cloudinary:', imageUrl);
       } catch (error) {
-        console.log('Cloudinary upload failed, proceeding without image:', error.message);
+        console.log('Image upload failed, proceeding without image:', error.message);
       }
     }
 
@@ -83,21 +80,28 @@ export const createTrafficComplaint = async (req, res, next) => {
 
     if (req.file) {
       try {
-        const uploadResult = await uploadImage(req.file.buffer, 'traffic-violations');
-        imageUrl = uploadResult.secure_url;
-        imagePublicId = uploadResult.public_id;
+        // Upload to Cloudinary
+        const result = await uploadImage(req.file.buffer, 'traffic-violations');
+        imageUrl = result.secure_url;
+        imagePublicId = result.public_id;
+        console.log('✓ Image uploaded to Cloudinary:', imageUrl);
 
-        const mlResult = await validatePlate(req.file.buffer);
-
-        if (mlResult.detected) {
-          detectedPlate = mlResult.plate_number;
-          confidence = mlResult.confidence;
-          validationStatus = confidence >= 0.8 ? 'Approved' : 'Manual Review';
-        } else {
+        // Try ML validation but don't fail if it doesn't work
+        try {
+          const mlResult = await validatePlate(req.file.buffer);
+          if (mlResult.detected) {
+            detectedPlate = mlResult.plate_number;
+            confidence = mlResult.confidence;
+            validationStatus = confidence >= 0.8 ? 'Approved' : 'Manual Review';
+          } else {
+            validationStatus = 'Manual Review';
+          }
+        } catch (mlError) {
+          console.log('ML service failed, skipping validation:', mlError.message);
           validationStatus = 'Manual Review';
         }
       } catch (error) {
-        console.log('Cloudinary/ML service failed, proceeding without image:', error.message);
+        console.log('Image upload failed, proceeding without image:', error.message);
         validationStatus = 'Manual Review';
       }
     }
