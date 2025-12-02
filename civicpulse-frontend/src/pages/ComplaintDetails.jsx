@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { complaintService } from "../services/complaintService";
 import { workerService } from "../services/workerService";
+import socketService from "../services/socketService";
 
 function ComplaintDetails() {
   const { id } = useParams();
@@ -39,6 +40,34 @@ function ComplaintDetails() {
     };
 
     fetchData();
+  }, [id]);
+
+  // Real-time updates via Socket.IO
+  useEffect(() => {
+    socketService.connect();
+
+    const handleComplaintUpdate = async (data) => {
+      // Only update if this is the complaint we're viewing
+      if (data.complaintId === id) {
+        console.log('Real-time update received for complaint:', id);
+
+        // Fetch fresh data to ensure consistency
+        try {
+          const response = await complaintService.getById(id);
+          if (response.success) {
+            setComplaint(response.data);
+          }
+        } catch (error) {
+          console.error('Failed to fetch updated complaint:', error);
+        }
+      }
+    };
+
+    socketService.onComplaintUpdated(handleComplaintUpdate);
+
+    return () => {
+      socketService.offComplaintUpdated(handleComplaintUpdate);
+    };
   }, [id]);
 
   const handleAssign = async (workerId) => {
